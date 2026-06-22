@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tennis Wordle · CourtsideConversation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #1e1e1e;
+    --surface:  #2a2a2a;
+    --surface2: #333;
+    --accent:   #a8c53a;
+    --adim:     #6b8e3e;
+    --text:     #f0f0f0;
+    --muted:    #888;
+    --border:   #3a3a3a;
+    --correct:  #4caf6e;
+    --wrong:    #e25c5c;
+    --partial:  #e0a030;
+    --font-d:   'Playfair Display', Georgia, serif;
+    --font-b:   'Inter', system-ui, sans-serif;
+    --r:        10px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-b); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+
+  main { width: 100%; max-width: 700px; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 16px; }
+
+  .title { font-family: var(--font-d); font-size: 26px; font-weight: 900; text-align: center; }
+  .title em { font-style: normal; color: var(--accent); }
+  .subtitle { text-align: center; font-size: 13px; color: var(--muted); }
+
+  /* ── Search input ── */
+  .search-wrap { position: relative; }
+  #search-input {
+    width: 100%; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r); color: var(--text); font-family: var(--font-b); font-size: 16px;
+    outline: none; transition: border-color 0.15s;
+  }
+  #search-input:focus { border-color: var(--accent); }
+  #search-input:disabled { opacity: 0.4; }
+  .dropdown {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+    overflow: hidden; z-index: 100; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .dropdown.open { display: block; }
+  .dd-item {
+    padding: 11px 16px; cursor: pointer; font-size: 14px; font-weight: 500;
+    border-bottom: 1px solid var(--border); transition: background 0.1s;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .dd-item:last-child { border-bottom: none; }
+  .dd-item:hover, .dd-item.hi { background: var(--surface2); }
+  .dd-meta { font-size: 12px; color: var(--muted); }
+  .dd-item.used { opacity: 0.4; pointer-events: none; }
+
+  /* ── Guess table ── */
+  .guess-table { display: flex; flex-direction: column; gap: 4px; }
+
+  /* Header row */
+  .row-header {
+    display: grid;
+    grid-template-columns: 160px repeat(10, 1fr);
+    gap: 4px;
+  }
+  .col-head {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 6px 4px; font-size: 10px; font-weight: 600; text-align: center;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Guess rows */
+  .guess-row {
+    display: grid;
+    grid-template-columns: 160px repeat(10, 1fr);
+    gap: 4px;
+  }
+  .cell {
+    border-radius: 6px; padding: 8px 4px; text-align: center; font-size: 12px;
+    font-weight: 600; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 2px; min-height: 52px; border: 1px solid transparent;
+  }
+  .cell-name {
+    background: var(--surface); border-color: var(--border);
+    font-size: 11px; font-weight: 600; text-align: left; padding: 8px 10px;
+    align-items: flex-start; justify-content: center;
+    line-height: 1.4;
+  }
+  .cell.correct  { background: rgba(76,175,110,0.2);  border-color: var(--correct);  color: var(--correct); }
+  .cell.wrong    { background: rgba(226,92,92,0.12);   border-color: var(--wrong);    color: var(--wrong); }
+  .cell.higher   { background: rgba(224,160,48,0.12);  border-color: var(--partial);  color: var(--partial); }
+  .cell.lower    { background: rgba(224,160,48,0.12);  border-color: var(--partial);  color: var(--partial); }
+  .cell-val { font-size: 11px; line-height: 1.3; }
+  .cell-arrow { font-size: 14px; line-height: 1; }
+
+  /* Empty rows */
+  .guess-row.empty .cell { background: var(--surface); border-color: var(--border); opacity: 0.3; }
+  .guess-row.empty .cell-name { opacity: 0.3; }
+
+  /* ── Result modal ── */
+  .modal-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; min-height: 100%;
+    background: rgba(0,0,0,0.75); display: none; align-items: flex-start;
+    justify-content: center; z-index: 300; padding: 24px; backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 28px 24px; width: 100%; max-width: 400px; display: flex; flex-direction: column;
+    gap: 14px; position: relative; margin-top: 10vh; animation: popIn 0.2s ease;
+  }
+  @keyframes popIn { from { transform: scale(0.93); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-close {
+    position: absolute; top: 14px; right: 14px; background: transparent;
+    border: 1px solid var(--border); border-radius: 6px; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center; color: var(--muted);
+    cursor: pointer; font-size: 16px; transition: border-color 0.15s, color 0.15s;
+  }
+  .modal-close:hover { border-color: var(--text); color: var(--text); }
+  .result-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; }
+  .result-name  { font-family: var(--font-d); font-size: 28px; font-weight: 900; color: var(--accent); text-align: center; }
+  .result-sub   { font-size: 13px; color: var(--muted); text-align: center; }
+  .result-squares { font-size: 22px; text-align: center; letter-spacing: 3px; }
+  .btn-share {
+    padding: 14px; border: none; border-radius: var(--r); background: var(--accent);
+    color: #1a1a1a; font-family: var(--font-b); font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .btn-share:hover { background: var(--adim); }
+  .btn-new-game {
+    padding: 12px; border: 1px solid var(--border); border-radius: var(--r);
+    background: transparent; color: var(--muted); font-family: var(--font-b);
+    font-size: 14px; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-new-game:hover { border-color: var(--text); color: var(--text); }
+
+  /* ── See result button ── */
+  .btn-see-result {
+    display: none; padding: 14px; border: none; border-radius: var(--r);
+    background: var(--accent); color: #1a1a1a; font-family: var(--font-b);
+    font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+  }
+  .btn-see-result.show { display: block; }
+  .btn-see-result:hover { background: var(--adim); }
+
+  .loading { text-align: center; color: var(--muted); padding: 40px 0; font-size: 15px; }
+  .error   { text-align: center; color: var(--wrong); padding: 20px 0; font-size: 14px; line-height: 1.6; }
+
+  @media (max-width: 600px) {
+    .row-header, .guess-row { grid-template-columns: 110px repeat(10, 1fr); gap: 3px; }
+    .col-head { font-size: 8px; padding: 4px 2px; }
+    .cell { font-size: 10px; min-height: 44px; padding: 4px 2px; }
+    .cell-name { font-size: 9px; padding: 4px 6px; }
+    .cell-val { font-size: 9px; }
+    .title { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <h1 class="title">Tennis <em>Wordle</em></h1>
+    <p class="subtitle">Guess the ATP player. Each guess reveals clues.</p>
+  </div>
+
+  <div id="loading" class="loading">Loading players…</div>
+  <div id="error" class="error" style="display:none"></div>
+
+  <div class="search-wrap" id="search-wrap" style="display:none">
+    <input type="text" id="search-input" placeholder="Type a player name to guess…" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div class="dropdown" id="dropdown"></div>
+  </div>
+
+  <div class="guess-table" id="guess-table" style="display:none"></div>
+
+  <button class="btn-see-result" id="btn-see-result" onclick="openModal()">See result</button>
+</main>
+
+<!-- Result modal -->
+<div class="modal-overlay" id="result-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="result-label" id="result-label">The player was</div>
+    <div class="result-name"  id="result-name"></div>
+    <div class="result-sub"   id="result-sub"></div>
+    <div class="result-squares" id="result-squares"></div>
+    <button class="btn-share"    id="btn-share">Share result</button>
+    <button class="btn-new-game" id="btn-new-game" onclick="newGame(); closeModal()">New game</button>
+  </div>
+</div>
+
+<script>
+const MAX_GUESSES = 8;
+const COLS = [
+  { key: 'country',    label: 'Country',    type: 'exact' },
+  { key: 'continent',  label: 'Continent',  type: 'exact' },
+  { key: 'rank',       label: 'Rank',       type: 'num_low' },  // lower is better
+  { key: 'careerHigh', label: 'Career High',type: 'num_low' },
+  { key: 'birthYear',  label: 'Born',       type: 'num' },
+  { key: 'turnedPro',  label: 'Turned Pro', type: 'num' },
+  { key: 'height',     label: 'Height',     type: 'num' },
+  { key: 'handedness', label: 'Hand',       type: 'exact' },
+  { key: 'backhand',   label: 'Backhand',   type: 'exact' },
+  { key: 'grandSlams', label: 'GS Titles',  type: 'num' },
+  { key: 'titles',     label: 'Titles',     type: 'num' },
+];
+
+let players  = [];
+let target   = null;
+let guesses  = [];
+let gameOver = false;
+let hiIndex  = -1;
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+async function init() {
+  try {
+    const r = await fetch('data/player_stats.json');
+    if (!r.ok) throw new Error('player_stats.json missing');
+    players = await r.json();
+    document.getElementById('loading').style.display = 'none';
+    newGame();
+  } catch(e) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'block';
+    document.getElementById('error').textContent = 'Could not load player data: ' + e.message;
+  }
+}
+
+function newGame() {
+  target   = players[Math.floor(Math.random() * players.length)];
+  guesses  = [];
+  gameOver = false;
+  hiIndex  = -1;
+  document.getElementById('search-wrap').style.display = 'block';
+  document.getElementById('guess-table').style.display = 'block';
+  document.getElementById('search-input').disabled = false;
+  document.getElementById('search-input').value = '';
+  document.getElementById('btn-see-result').classList.remove('show');
+  closeDropdown();
+  renderTable();
+}
+
+// ── Height helpers ────────────────────────────────────────────────────────────
+
+function cmToFtIn(cm) {
+  if (!cm) return '?';
+  const totalIn = cm / 2.54;
+  const ft = Math.floor(totalIn / 12);
+  const inches = Math.round(totalIn % 12);
+  return `${ft}'${inches}"`;
+}
+
+function fmtHeight(cm) {
+  if (!cm) return '?';
+  return `${cm}cm\n${cmToFtIn(cm)}`;
+}
+
+// ── Compare ───────────────────────────────────────────────────────────────────
+
+function compare(guess, tgt, col) {
+  const gv = guess[col.key];
+  const tv = tgt[col.key];
+
+  if (gv === null || gv === undefined || tv === null || tv === undefined) {
+    return { cls: 'wrong', arrow: '', val: gv ?? '?' };
+  }
+
+  if (col.type === 'exact') {
+    const match = String(gv).toLowerCase() === String(tv).toLowerCase();
+    return { cls: match ? 'correct' : 'wrong', arrow: '', val: gv };
+  }
+
+  if (col.type === 'num' || col.type === 'num_low') {
+    if (gv === tv) return { cls: 'correct', arrow: '', val: gv };
+    const higher = gv > tv;
+    // For rank/career high: lower number is better, so arrow meaning flips
+    const arrow = col.type === 'num_low'
+      ? (higher ? '↓' : '↑')   // guess too high → go lower (better rank)
+      : (higher ? '↑' : '↓');  // wait no: guess is higher than target → go DOWN
+    // Actually: arrow should tell the player which direction to adjust their NEXT guess
+    // If guess rank=50 and target rank=10: guess is too high (worse), arrow = ↑ (go to better/lower number)
+    const cls = 'higher'; // orange either way
+    return {
+      cls: higher ? 'higher' : 'lower',
+      arrow: higher ? (col.type === 'num_low' ? '↑ better' : '↑') : (col.type === 'num_low' ? '↓ worse' : '↓'),
+      val: col.key === 'height' ? `${gv}cm` : gv
+    };
+  }
+
+  return { cls: 'wrong', arrow: '', val: gv ?? '?' };
+}
+
+// ── Render table ──────────────────────────────────────────────────────────────
+
+function renderTable() {
+  const table = document.getElementById('guess-table');
+  table.innerHTML = '';
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'row-header';
+  header.innerHTML = `<div class="col-head">Player</div>` +
+    COLS.map(c => `<div class="col-head">${c.label}</div>`).join('');
+  table.appendChild(header);
+
+  // Filled guess rows
+  guesses.forEach(g => {
+    const row = document.createElement('div');
+    row.className = 'guess-row';
+    row.innerHTML = `<div class="cell cell-name">${g.name}<br><span style="font-size:10px;color:var(--muted)">#${g.rank} ${g.country}</span></div>`;
+    COLS.forEach(col => {
+      const { cls, arrow, val } = compare(g, target, col);
+      let display = val;
+      if (col.key === 'height') {
+        display = g.height ? `${g.height}cm\n${cmToFtIn(g.height)}` : '?';
+      }
+      row.innerHTML += `<div class="cell ${cls}">
+        ${arrow ? `<div class="cell-arrow">${arrow}</div>` : ''}
+        <div class="cell-val">${String(display).replace('\n','<br>')}</div>
+      </div>`;
+    });
+    table.appendChild(row);
+  });
+
+  // Empty rows
+  const remaining = MAX_GUESSES - guesses.length;
+  for (let i = 0; i < remaining; i++) {
+    const row = document.createElement('div');
+    row.className = 'guess-row empty';
+    row.innerHTML = `<div class="cell cell-name"></div>` +
+      COLS.map(() => `<div class="cell"></div>`).join('');
+    table.appendChild(row);
+  }
+}
+
+// ── Autocomplete ──────────────────────────────────────────────────────────────
+
+const inp      = document.getElementById('search-input');
+const dropdown = document.getElementById('dropdown');
+const usedIds  = () => new Set(guesses.map(g => g.id));
+
+function norm(s) {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z\s]/g,'').trim();
+}
+
+function getSuggestions(q) {
+  if (!q || q.length < 2) return [];
+  const qn = norm(q);
+  return players.filter(p => {
+    const n = norm(p.name);
+    return n.startsWith(qn) || n.split(' ').some(w => w.startsWith(qn));
+  }).slice(0, 8);
+}
+
+function renderDropdown(suggestions) {
+  if (!suggestions.length) { closeDropdown(); return; }
+  const used = usedIds();
+  dropdown.innerHTML = suggestions.map((p, i) => `
+    <div class="dd-item ${used.has(p.id) ? 'used' : ''}" data-index="${i}">
+      <span>${p.name}</span>
+      <span class="dd-meta">${p.country} · #${p.rank}</span>
+    </div>`).join('');
+  dropdown.classList.add('open');
+  hiIndex = -1;
+  dropdown.querySelectorAll('.dd-item:not(.used)').forEach(item => {
+    item.addEventListener('mousedown', e => {
+      e.preventDefault();
+      submitGuess(suggestions[parseInt(item.dataset.index)]);
+    });
+  });
+}
+
+function closeDropdown() {
+  dropdown.classList.remove('open');
+  dropdown.innerHTML = '';
+  hiIndex = -1;
+}
+
+inp.addEventListener('input', () => { if (!gameOver) renderDropdown(getSuggestions(inp.value)); });
+inp.addEventListener('keydown', e => {
+  if (gameOver) return;
+  const items = [...dropdown.querySelectorAll('.dd-item:not(.used)')];
+  if (e.key === 'ArrowDown') { e.preventDefault(); hiIndex = Math.min(hiIndex+1, items.length-1); items.forEach((el,i) => el.classList.toggle('hi', i===hiIndex)); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); hiIndex = Math.max(hiIndex-1, 0); items.forEach((el,i) => el.classList.toggle('hi', i===hiIndex)); }
+  else if (e.key === 'Enter' && hiIndex >= 0) { e.preventDefault(); items[hiIndex].dispatchEvent(new Event('mousedown')); }
+  else if (e.key === 'Escape') closeDropdown();
+});
+inp.addEventListener('blur', () => setTimeout(closeDropdown, 150));
+
+// ── Submit guess ──────────────────────────────────────────────────────────────
+
+function submitGuess(player) {
+  if (gameOver || usedIds().has(player.id)) return;
+  guesses.push(player);
+  inp.value = '';
+  closeDropdown();
+
+  const won = player.id === target.id;
+  if (won || guesses.length >= MAX_GUESSES) {
+    gameOver = true;
+    inp.disabled = true;
+    renderTable();
+    setTimeout(() => openModal(), 800);
+    document.getElementById('btn-see-result').classList.add('show');
+  } else {
+    renderTable();
+  }
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+
+function openModal() {
+  const won = guesses.some(g => g.id === target.id);
+  document.getElementById('result-label').textContent = won ? '🎉 You got it!' : 'The answer was';
+  document.getElementById('result-name').textContent  = target.name;
+  document.getElementById('result-sub').textContent   = `ATP #${target.rank} · ${target.country}`;
+  document.getElementById('result-squares').textContent =
+    guesses.map(g => g.id === target.id ? '🟩' : '🟥').join('');
+  document.getElementById('result-modal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  window.scrollTo(0, 0);
+}
+
+function closeModal() {
+  document.getElementById('result-modal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('btn-share').addEventListener('click', () => {
+  const won   = guesses.some(g => g.id === target.id);
+  const score = won ? guesses.length : 'X';
+  const squares = guesses.map(g => g.id === target.id ? '🟩' : '🟥').join('');
+  const text  = `Tennis Wordle ${score}/${MAX_GUESSES}\n${squares}\ncourtsideconversation-ctrl.github.io/Game-Hub/`;
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('btn-share').textContent = 'Copied! ✓';
+    setTimeout(() => document.getElementById('btn-share').textContent = 'Share result', 2000);
+  });
+});
+
+init();
+</script>
+</body>
+</html>
