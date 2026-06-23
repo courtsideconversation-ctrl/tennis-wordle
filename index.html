@@ -8,35 +8,35 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:       #1e1e1e;
-    --surface:  #2a2a2a;
-    --surface2: #333;
-    --accent:   #a8c53a;
-    --adim:     #6b8e3e;
-    --text:     #f0f0f0;
-    --muted:    #888;
-    --border:   #3a3a3a;
-    --correct:  #4caf6e;
-    --wrong:    #e25c5c;
-    --partial:  #e0a030;
-    --font-d:   'Playfair Display', Georgia, serif;
-    --font-b:   'Inter', system-ui, sans-serif;
-    --r:        10px;
+    --bg:      #1e1e1e;
+    --surface: #2a2a2a;
+    --surface2:#333;
+    --accent:  #a8c53a;
+    --adim:    #6b8e3e;
+    --text:    #f0f0f0;
+    --muted:   #888;
+    --border:  #3a3a3a;
+    --correct: #4caf6e;
+    --wrong:   #e25c5c;
+    --close:   #e0a030;
+    --fd: 'Playfair Display', Georgia, serif;
+    --fb: 'Inter', system-ui, sans-serif;
+    --r: 10px;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--font-b); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+  body { background: var(--bg); color: var(--text); font-family: var(--fb); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
 
-  main { width: 100%; max-width: 700px; padding: 24px 16px 64px; display: flex; flex-direction: column; gap: 16px; }
+  main { width: 100%; max-width: 900px; padding: 20px 16px 64px; display: flex; flex-direction: column; gap: 14px; }
 
-  .title { font-family: var(--font-d); font-size: 26px; font-weight: 900; text-align: center; }
+  .title { font-family: var(--fd); font-size: 24px; font-weight: 900; text-align: center; }
   .title em { font-style: normal; color: var(--accent); }
   .subtitle { text-align: center; font-size: 13px; color: var(--muted); }
 
-  /* ── Search input ── */
+  /* ── Search ── */
   .search-wrap { position: relative; }
   #search-input {
-    width: 100%; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--r); color: var(--text); font-family: var(--font-b); font-size: 16px;
+    width: 100%; padding: 13px 16px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--r); color: var(--text); font-family: var(--fb); font-size: 15px;
     outline: none; transition: border-color 0.15s;
   }
   #search-input:focus { border-color: var(--accent); }
@@ -48,58 +48,62 @@
   }
   .dropdown.open { display: block; }
   .dd-item {
-    padding: 11px 16px; cursor: pointer; font-size: 14px; font-weight: 500;
+    padding: 10px 16px; cursor: pointer; font-size: 14px; font-weight: 500;
     border-bottom: 1px solid var(--border); transition: background 0.1s;
     display: flex; align-items: center; justify-content: space-between;
   }
   .dd-item:last-child { border-bottom: none; }
   .dd-item:hover, .dd-item.hi { background: var(--surface2); }
+  .dd-item.used { opacity: 0.35; pointer-events: none; }
   .dd-meta { font-size: 12px; color: var(--muted); }
-  .dd-item.used { opacity: 0.4; pointer-events: none; }
 
-  /* ── Guess table ── */
-  .guess-table { display: flex; flex-direction: column; gap: 4px; }
-
-  /* Header row */
-  .row-header {
+  /* ── Grid layout: rows = categories, columns = guesses ── */
+  .grid-wrap { overflow-x: auto; }
+  .grid {
     display: grid;
-    grid-template-columns: 160px repeat(10, 1fr);
-    gap: 4px;
+    /* first col = category label, then one col per guess, then placeholder cols */
+    min-width: 100%;
   }
-  .col-head {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
-    padding: 6px 4px; font-size: 10px; font-weight: 600; text-align: center;
-    color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em;
-    display: flex; align-items: center; justify-content: center;
+  .grid-cell {
+    padding: 8px 6px; font-size: 12px; text-align: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 52px; min-width: 72px; border-radius: 6px; gap: 2px;
   }
+  .grid-cell.label-cell {
+    text-align: left; align-items: flex-start; justify-content: center;
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.04em;
+    min-width: 100px; padding: 8px 10px; border-radius: 6px;
+  }
+  .grid-cell.empty-cell {
+    background: var(--surface); border: 1px solid var(--border); opacity: 0.3;
+  }
+  .grid-cell.correct { background: rgba(76,175,110,0.2);  border: 1px solid var(--correct); color: var(--correct); }
+  .grid-cell.wrong   { background: rgba(226,92,92,0.12);  border: 1px solid var(--wrong);   color: var(--wrong); }
+  .grid-cell.close   { background: rgba(224,160,48,0.12); border: 1px solid var(--close);   color: var(--close); }
+  .cell-arrow { font-size: 16px; line-height: 1; }
+  .cell-val   { font-size: 11px; line-height: 1.3; font-weight: 600; }
 
-  /* Guess rows */
-  .guess-row {
-    display: grid;
-    grid-template-columns: 160px repeat(10, 1fr);
-    gap: 4px;
+  /* header row: "PLAYER" + player names */
+  .header-cell {
+    padding: 6px 8px; font-size: 11px; font-weight: 600; text-align: center;
+    color: var(--muted); background: transparent; min-width: 72px; min-height: 36px;
+    display: flex; align-items: flex-end; justify-content: center;
+    border-bottom: 1px solid var(--border);
   }
-  .cell {
-    border-radius: 6px; padding: 8px 4px; text-align: center; font-size: 12px;
-    font-weight: 600; display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 2px; min-height: 52px; border: 1px solid transparent;
+  .header-cell.label-head {
+    text-align: left; align-items: flex-end; justify-content: flex-start;
+    min-width: 100px; font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border); padding-left: 10px;
   }
-  .cell-name {
-    background: var(--surface); border-color: var(--border);
-    font-size: 11px; font-weight: 600; text-align: left; padding: 8px 10px;
-    align-items: flex-start; justify-content: center;
-    line-height: 1.4;
+  .header-cell.player-head {
+    flex-direction: column; gap: 2px; align-items: center; justify-content: flex-end;
+    padding-bottom: 8px;
   }
-  .cell.correct  { background: rgba(76,175,110,0.2);  border-color: var(--correct);  color: var(--correct); }
-  .cell.wrong    { background: rgba(226,92,92,0.12);   border-color: var(--wrong);    color: var(--wrong); }
-  .cell.higher   { background: rgba(224,160,48,0.12);  border-color: var(--partial);  color: var(--partial); }
-  .cell.lower    { background: rgba(224,160,48,0.12);  border-color: var(--partial);  color: var(--partial); }
-  .cell-val { font-size: 11px; line-height: 1.3; }
-  .cell-arrow { font-size: 14px; line-height: 1; }
-
-  /* Empty rows */
-  .guess-row.empty .cell { background: var(--surface); border-color: var(--border); opacity: 0.3; }
-  .guess-row.empty .cell-name { opacity: 0.3; }
+  .head-name { font-size: 11px; font-weight: 600; color: var(--text); line-height: 1.2; text-align: center; }
+  .head-sub  { font-size: 10px; color: var(--muted); }
 
   /* ── Result modal ── */
   .modal-overlay {
@@ -110,53 +114,50 @@
   .modal-overlay.show { display: flex; }
   .modal {
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
-    padding: 28px 24px; width: 100%; max-width: 400px; display: flex; flex-direction: column;
-    gap: 14px; position: relative; margin-top: 10vh; animation: popIn 0.2s ease;
+    padding: 28px 24px; width: 100%; max-width: 380px; display: flex; flex-direction: column;
+    gap: 14px; position: relative; margin-top: 8vh; animation: popIn 0.2s ease;
   }
   @keyframes popIn { from { transform: scale(0.93); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .modal-close {
     position: absolute; top: 14px; right: 14px; background: transparent;
     border: 1px solid var(--border); border-radius: 6px; width: 30px; height: 30px;
     display: flex; align-items: center; justify-content: center; color: var(--muted);
-    cursor: pointer; font-size: 16px; transition: border-color 0.15s, color 0.15s;
+    cursor: pointer; font-size: 16px;
   }
   .modal-close:hover { border-color: var(--text); color: var(--text); }
-  .result-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; }
-  .result-name  { font-family: var(--font-d); font-size: 28px; font-weight: 900; color: var(--accent); text-align: center; }
-  .result-sub   { font-size: 13px; color: var(--muted); text-align: center; }
-  .result-squares { font-size: 22px; text-align: center; letter-spacing: 3px; }
+  .result-label  { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; }
+  .result-name   { font-family: var(--fd); font-size: 26px; font-weight: 900; color: var(--accent); text-align: center; }
+  .result-sub    { font-size: 13px; color: var(--muted); text-align: center; }
+  .result-squares { font-size: 20px; text-align: center; letter-spacing: 2px; }
   .btn-share {
-    padding: 14px; border: none; border-radius: var(--r); background: var(--accent);
-    color: #1a1a1a; font-family: var(--font-b); font-size: 15px; font-weight: 600;
+    padding: 13px; border: none; border-radius: var(--r); background: var(--accent);
+    color: #1a1a1a; font-family: var(--fb); font-size: 14px; font-weight: 600;
     cursor: pointer; transition: background 0.15s;
   }
   .btn-share:hover { background: var(--adim); }
-  .btn-new-game {
-    padding: 12px; border: 1px solid var(--border); border-radius: var(--r);
-    background: transparent; color: var(--muted); font-family: var(--font-b);
+  .btn-new {
+    padding: 11px; border: 1px solid var(--border); border-radius: var(--r);
+    background: transparent; color: var(--muted); font-family: var(--fb);
     font-size: 14px; cursor: pointer; transition: all 0.15s;
   }
-  .btn-new-game:hover { border-color: var(--text); color: var(--text); }
+  .btn-new:hover { border-color: var(--text); color: var(--text); }
 
-  /* ── See result button ── */
-  .btn-see-result {
-    display: none; padding: 14px; border: none; border-radius: var(--r);
-    background: var(--accent); color: #1a1a1a; font-family: var(--font-b);
-    font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+  .btn-see {
+    display: none; padding: 13px; border: none; border-radius: var(--r);
+    background: var(--accent); color: #1a1a1a; font-family: var(--fb);
+    font-size: 14px; font-weight: 600; cursor: pointer;
   }
-  .btn-see-result.show { display: block; }
-  .btn-see-result:hover { background: var(--adim); }
+  .btn-see.show { display: block; }
+  .btn-see:hover { background: var(--adim); }
 
   .loading { text-align: center; color: var(--muted); padding: 40px 0; font-size: 15px; }
   .error   { text-align: center; color: var(--wrong); padding: 20px 0; font-size: 14px; line-height: 1.6; }
 
-  @media (max-width: 600px) {
-    .row-header, .guess-row { grid-template-columns: 110px repeat(10, 1fr); gap: 3px; }
-    .col-head { font-size: 8px; padding: 4px 2px; }
-    .cell { font-size: 10px; min-height: 44px; padding: 4px 2px; }
-    .cell-name { font-size: 9px; padding: 4px 6px; }
-    .cell-val { font-size: 9px; }
-    .title { font-size: 22px; }
+  @media (max-width: 500px) {
+    .grid-cell { min-width: 58px; font-size: 10px; }
+    .grid-cell.label-cell { min-width: 82px; font-size: 10px; }
+    .header-cell { min-width: 58px; }
+    .header-cell.label-head { min-width: 82px; }
   }
 </style>
 </head>
@@ -168,55 +169,61 @@
   </div>
 
   <div id="loading" class="loading">Loading players…</div>
-  <div id="error" class="error" style="display:none"></div>
+  <div id="error"   class="error"   style="display:none"></div>
 
   <div class="search-wrap" id="search-wrap" style="display:none">
     <input type="text" id="search-input" placeholder="Type a player name to guess…" autocomplete="off" autocorrect="off" spellcheck="false">
     <div class="dropdown" id="dropdown"></div>
   </div>
 
-  <div class="guess-table" id="guess-table" style="display:none"></div>
+  <div class="grid-wrap" id="grid-wrap" style="display:none">
+    <div class="grid" id="grid"></div>
+  </div>
 
-  <button class="btn-see-result" id="btn-see-result" onclick="openModal()">See result</button>
+  <button class="btn-see" id="btn-see" onclick="openModal()">See result</button>
 </main>
 
 <!-- Result modal -->
 <div class="modal-overlay" id="result-modal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal()">✕</button>
-    <div class="result-label" id="result-label">The player was</div>
+    <div class="result-label" id="result-label">The answer was</div>
     <div class="result-name"  id="result-name"></div>
     <div class="result-sub"   id="result-sub"></div>
     <div class="result-squares" id="result-squares"></div>
-    <button class="btn-share"    id="btn-share">Share result</button>
-    <button class="btn-new-game" id="btn-new-game" onclick="newGame(); closeModal()">New game</button>
+    <button class="btn-share" id="btn-share">Share result</button>
+    <button class="btn-new"   id="btn-new" onclick="newGame(); closeModal()">New game</button>
   </div>
 </div>
 
 <script>
 const MAX_GUESSES = 8;
-const COLS = [
-  { key: 'country',    label: 'Country',    type: 'exact' },
-  { key: 'continent',  label: 'Continent',  type: 'exact' },
-  { key: 'rank',       label: 'Rank',       type: 'num_low' },  // lower is better
-  { key: 'careerHigh', label: 'Career High',type: 'num_low' },
-  { key: 'birthYear',  label: 'Born',       type: 'num' },
-  { key: 'turnedPro',  label: 'Turned Pro', type: 'num' },
-  { key: 'height',     label: 'Height',     type: 'num' },
-  { key: 'handedness', label: 'Hand',       type: 'exact' },
-  { key: 'backhand',   label: 'Backhand',   type: 'exact' },
-  { key: 'grandSlams', label: 'GS Titles',  type: 'num' },
-  { key: 'titles',     label: 'Titles',     type: 'num' },
+
+// Category definitions
+// type: 'exact' = green/red only
+// type: 'num'   = higher/lower (higher number = higher value, arrow points to correct direction)
+// type: 'num_r' = reverse (lower number is better, like rank — arrow tells you to go UP for better)
+const CATS = [
+  { key: 'country',    label: 'Country',     type: 'exact' },
+  { key: 'continent',  label: 'Continent',   type: 'exact' },
+  { key: 'rank',       label: 'Rank',        type: 'num_r' },
+  { key: 'careerHigh', label: 'Career High', type: 'num_r' },
+  { key: 'birthYear',  label: 'Born',        type: 'num'   },
+  { key: 'turnedPro',  label: 'Turned Pro',  type: 'num'   },
+  { key: 'height',     label: 'Height',      type: 'num'   },
+  { key: 'handedness', label: 'Handedness',  type: 'exact' },
+  { key: 'backhand',   label: 'Backhand',    type: 'exact' },
+  { key: 'grandSlams', label: 'GS Titles',   type: 'num'   },
+  { key: 'titles',     label: 'Titles',      type: 'num'   },
 ];
 
 let players  = [];
 let target   = null;
 let guesses  = [];
 let gameOver = false;
-let hiIndex  = -1;
+let hiIdx    = -1;
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-
 async function init() {
   try {
     const r = await fetch('data/player_stats.json');
@@ -226,8 +233,9 @@ async function init() {
     newGame();
   } catch(e) {
     document.getElementById('loading').style.display = 'none';
-    document.getElementById('error').style.display = 'block';
-    document.getElementById('error').textContent = 'Could not load player data: ' + e.message;
+    const err = document.getElementById('error');
+    err.style.display = 'block';
+    err.textContent = 'Could not load player data: ' + e.message;
   }
 }
 
@@ -235,111 +243,126 @@ function newGame() {
   target   = players[Math.floor(Math.random() * players.length)];
   guesses  = [];
   gameOver = false;
-  hiIndex  = -1;
+  hiIdx    = -1;
   document.getElementById('search-wrap').style.display = 'block';
-  document.getElementById('guess-table').style.display = 'block';
-  document.getElementById('search-input').disabled = false;
-  document.getElementById('search-input').value = '';
-  document.getElementById('btn-see-result').classList.remove('show');
+  document.getElementById('grid-wrap').style.display   = 'block';
+  document.getElementById('search-input').disabled     = false;
+  document.getElementById('search-input').value        = '';
+  document.getElementById('btn-see').classList.remove('show');
   closeDropdown();
-  renderTable();
+  renderGrid();
 }
 
-// ── Height helpers ────────────────────────────────────────────────────────────
-
-function cmToFtIn(cm) {
-  if (!cm) return '?';
-  const totalIn = cm / 2.54;
-  const ft = Math.floor(totalIn / 12);
-  const inches = Math.round(totalIn % 12);
+// ── Height ────────────────────────────────────────────────────────────────────
+function cmToFt(cm) {
+  if (!cm) return '';
+  const ft = Math.floor(cm / 30.48);
+  const inches = Math.round((cm % 30.48) / 2.54);
   return `${ft}'${inches}"`;
 }
 
-function fmtHeight(cm) {
-  if (!cm) return '?';
-  return `${cm}cm\n${cmToFtIn(cm)}`;
-}
-
 // ── Compare ───────────────────────────────────────────────────────────────────
+function compare(guess, cat) {
+  const gv = guess[cat.key];
+  const tv = target[cat.key];
 
-function compare(guess, tgt, col) {
-  const gv = guess[col.key];
-  const tv = tgt[col.key];
+  if (gv == null || tv == null) return { cls: 'wrong', arrow: '', val: gv ?? '?' };
 
-  if (gv === null || gv === undefined || tv === null || tv === undefined) {
-    return { cls: 'wrong', arrow: '', val: gv ?? '?' };
-  }
-
-  if (col.type === 'exact') {
+  if (cat.type === 'exact') {
     const match = String(gv).toLowerCase() === String(tv).toLowerCase();
     return { cls: match ? 'correct' : 'wrong', arrow: '', val: gv };
   }
 
-  if (col.type === 'num' || col.type === 'num_low') {
-    if (gv === tv) return { cls: 'correct', arrow: '', val: gv };
-    const higher = gv > tv;
-    // For rank/career high: lower number is better, so arrow meaning flips
-    const arrow = col.type === 'num_low'
-      ? (higher ? '↓' : '↑')   // guess too high → go lower (better rank)
-      : (higher ? '↑' : '↓');  // wait no: guess is higher than target → go DOWN
-    // Actually: arrow should tell the player which direction to adjust their NEXT guess
-    // If guess rank=50 and target rank=10: guess is too high (worse), arrow = ↑ (go to better/lower number)
-    const cls = 'higher'; // orange either way
-    return {
-      cls: higher ? 'higher' : 'lower',
-      arrow: higher ? (col.type === 'num_low' ? '↑ better' : '↑') : (col.type === 'num_low' ? '↓ worse' : '↓'),
-      val: col.key === 'height' ? `${gv}cm` : gv
-    };
+  if (gv === tv) return { cls: 'correct', arrow: '', val: cat.key === 'height' ? `${gv}cm` : gv };
+
+  // num: higher value is "more" — arrow points direction to move
+  // num_r: lower number is better (rank) — if guess rank > target rank, need to go to lower number (better)
+  const guessHigher = gv > tv;
+
+  let arrow;
+  if (cat.type === 'num') {
+    // guess is higher than target → target is lower → go down ↓
+    arrow = guessHigher ? '↓' : '↑';
+  } else {
+    // num_r: rank — if guess rank number is higher than target, target has a BETTER (lower) rank → go ↑ (better)
+    arrow = guessHigher ? '↑' : '↓';
   }
 
-  return { cls: 'wrong', arrow: '', val: gv ?? '?' };
+  let val = gv;
+  if (cat.key === 'height') val = `${gv}cm\n${cmToFt(gv)}`;
+
+  return { cls: 'close', arrow, val };
 }
 
-// ── Render table ──────────────────────────────────────────────────────────────
+// ── Render grid ───────────────────────────────────────────────────────────────
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  const numGuesses  = guesses.length;
+  const emptyCols   = Math.max(0, MAX_GUESSES - numGuesses);
+  const totalCols   = 1 + numGuesses + emptyCols; // label + filled + empty
 
-function renderTable() {
-  const table = document.getElementById('guess-table');
-  table.innerHTML = '';
+  grid.style.gridTemplateColumns = `100px repeat(${numGuesses + emptyCols}, 1fr)`;
 
-  // Header
-  const header = document.createElement('div');
-  header.className = 'row-header';
-  header.innerHTML = `<div class="col-head">Player</div>` +
-    COLS.map(c => `<div class="col-head">${c.label}</div>`).join('');
-  table.appendChild(header);
+  grid.innerHTML = '';
 
-  // Filled guess rows
+  // ── Header row ──
+  // Label corner
+  const corner = document.createElement('div');
+  corner.className = 'header-cell label-head';
+  corner.textContent = 'CATEGORY';
+  grid.appendChild(corner);
+
+  // Player name headers
   guesses.forEach(g => {
-    const row = document.createElement('div');
-    row.className = 'guess-row';
-    row.innerHTML = `<div class="cell cell-name">${g.name}<br><span style="font-size:10px;color:var(--muted)">#${g.rank} ${g.country}</span></div>`;
-    COLS.forEach(col => {
-      const { cls, arrow, val } = compare(g, target, col);
-      let display = val;
-      if (col.key === 'height') {
-        display = g.height ? `${g.height}cm\n${cmToFtIn(g.height)}` : '?';
-      }
-      row.innerHTML += `<div class="cell ${cls}">
-        ${arrow ? `<div class="cell-arrow">${arrow}</div>` : ''}
-        <div class="cell-val">${String(display).replace('\n','<br>')}</div>
-      </div>`;
-    });
-    table.appendChild(row);
+    const h = document.createElement('div');
+    h.className = 'header-cell player-head';
+    h.innerHTML = `<span class="head-name">${g.name.split(' ').pop()}</span><span class="head-sub">#${g.rank}</span>`;
+    grid.appendChild(h);
   });
 
-  // Empty rows
-  const remaining = MAX_GUESSES - guesses.length;
-  for (let i = 0; i < remaining; i++) {
-    const row = document.createElement('div');
-    row.className = 'guess-row empty';
-    row.innerHTML = `<div class="cell cell-name"></div>` +
-      COLS.map(() => `<div class="cell"></div>`).join('');
-    table.appendChild(row);
+  // Empty headers
+  for (let i = 0; i < emptyCols; i++) {
+    const h = document.createElement('div');
+    h.className = 'header-cell';
+    grid.appendChild(h);
   }
+
+  // ── Category rows ──
+  CATS.forEach(cat => {
+    // Label
+    const label = document.createElement('div');
+    label.className = 'grid-cell label-cell';
+    label.textContent = cat.label;
+    grid.appendChild(label);
+
+    // Filled guess cells
+    guesses.forEach(g => {
+      const { cls, arrow, val } = compare(g, cat);
+      const cell = document.createElement('div');
+      cell.className = `grid-cell ${cls}`;
+
+      let display = String(val);
+      if (cat.key === 'height' && g.height) {
+        display = `${g.height}cm\n${cmToFt(g.height)}`;
+      }
+
+      cell.innerHTML = arrow
+        ? `<div class="cell-arrow">${arrow}</div><div class="cell-val">${display.replace('\n','<br>')}</div>`
+        : `<div class="cell-val">${display.replace('\n','<br>')}</div>`;
+
+      grid.appendChild(cell);
+    });
+
+    // Empty cells
+    for (let i = 0; i < emptyCols; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell empty-cell';
+      grid.appendChild(cell);
+    }
+  });
 }
 
 // ── Autocomplete ──────────────────────────────────────────────────────────────
-
 const inp      = document.getElementById('search-input');
 const dropdown = document.getElementById('dropdown');
 const usedIds  = () => new Set(guesses.map(g => g.id));
@@ -366,7 +389,7 @@ function renderDropdown(suggestions) {
       <span class="dd-meta">${p.country} · #${p.rank}</span>
     </div>`).join('');
   dropdown.classList.add('open');
-  hiIndex = -1;
+  hiIdx = -1;
   dropdown.querySelectorAll('.dd-item:not(.used)').forEach(item => {
     item.addEventListener('mousedown', e => {
       e.preventDefault();
@@ -378,22 +401,21 @@ function renderDropdown(suggestions) {
 function closeDropdown() {
   dropdown.classList.remove('open');
   dropdown.innerHTML = '';
-  hiIndex = -1;
+  hiIdx = -1;
 }
 
 inp.addEventListener('input', () => { if (!gameOver) renderDropdown(getSuggestions(inp.value)); });
 inp.addEventListener('keydown', e => {
   if (gameOver) return;
   const items = [...dropdown.querySelectorAll('.dd-item:not(.used)')];
-  if (e.key === 'ArrowDown') { e.preventDefault(); hiIndex = Math.min(hiIndex+1, items.length-1); items.forEach((el,i) => el.classList.toggle('hi', i===hiIndex)); }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); hiIndex = Math.max(hiIndex-1, 0); items.forEach((el,i) => el.classList.toggle('hi', i===hiIndex)); }
-  else if (e.key === 'Enter' && hiIndex >= 0) { e.preventDefault(); items[hiIndex].dispatchEvent(new Event('mousedown')); }
+  if (e.key === 'ArrowDown')  { e.preventDefault(); hiIdx = Math.min(hiIdx+1, items.length-1); items.forEach((el,i) => el.classList.toggle('hi', i===hiIdx)); }
+  else if (e.key === 'ArrowUp')   { e.preventDefault(); hiIdx = Math.max(hiIdx-1, 0); items.forEach((el,i) => el.classList.toggle('hi', i===hiIdx)); }
+  else if (e.key === 'Enter' && hiIdx >= 0) { e.preventDefault(); items[hiIdx].dispatchEvent(new Event('mousedown')); }
   else if (e.key === 'Escape') closeDropdown();
 });
 inp.addEventListener('blur', () => setTimeout(closeDropdown, 150));
 
-// ── Submit guess ──────────────────────────────────────────────────────────────
-
+// ── Submit ────────────────────────────────────────────────────────────────────
 function submitGuess(player) {
   if (gameOver || usedIds().has(player.id)) return;
   guesses.push(player);
@@ -404,23 +426,21 @@ function submitGuess(player) {
   if (won || guesses.length >= MAX_GUESSES) {
     gameOver = true;
     inp.disabled = true;
-    renderTable();
-    setTimeout(() => openModal(), 800);
-    document.getElementById('btn-see-result').classList.add('show');
+    renderGrid();
+    setTimeout(openModal, 700);
+    document.getElementById('btn-see').classList.add('show');
   } else {
-    renderTable();
+    renderGrid();
   }
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
-
 function openModal() {
   const won = guesses.some(g => g.id === target.id);
-  document.getElementById('result-label').textContent = won ? '🎉 You got it!' : 'The answer was';
-  document.getElementById('result-name').textContent  = target.name;
-  document.getElementById('result-sub').textContent   = `ATP #${target.rank} · ${target.country}`;
-  document.getElementById('result-squares').textContent =
-    guesses.map(g => g.id === target.id ? '🟩' : '🟥').join('');
+  document.getElementById('result-label').textContent   = won ? '🎉 You got it!' : 'The answer was';
+  document.getElementById('result-name').textContent    = target.name;
+  document.getElementById('result-sub').textContent     = `ATP #${target.rank} · ${target.country}`;
+  document.getElementById('result-squares').textContent = guesses.map(g => g.id === target.id ? '🟩' : '🟥').join('');
   document.getElementById('result-modal').classList.add('show');
   document.body.style.overflow = 'hidden';
   window.scrollTo(0, 0);
@@ -434,8 +454,7 @@ function closeModal() {
 document.getElementById('btn-share').addEventListener('click', () => {
   const won   = guesses.some(g => g.id === target.id);
   const score = won ? guesses.length : 'X';
-  const squares = guesses.map(g => g.id === target.id ? '🟩' : '🟥').join('');
-  const text  = `Tennis Wordle ${score}/${MAX_GUESSES}\n${squares}\ncourtsideconversation-ctrl.github.io/Game-Hub/`;
+  const text  = `Tennis Wordle ${score}/${MAX_GUESSES}\n${guesses.map(g => g.id === target.id ? '🟩' : '🟥').join('')}\ncourtsideconversation-ctrl.github.io/Game-Hub/`;
   navigator.clipboard.writeText(text).then(() => {
     document.getElementById('btn-share').textContent = 'Copied! ✓';
     setTimeout(() => document.getElementById('btn-share').textContent = 'Share result', 2000);
